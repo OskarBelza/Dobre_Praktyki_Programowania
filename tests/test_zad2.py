@@ -9,11 +9,11 @@ from zadania.zad2 import (is_palindrome,
 
 
 def test_is_palindrome():
-    assert is_palindrome("kajak") == True
-    assert is_palindrome("Kobyła ma mały bok") == True
-    assert is_palindrome("python") == False
-    assert is_palindrome("") == True
-    assert is_palindrome("A") == True
+    assert is_palindrome("kajak") is True
+    assert is_palindrome("Kobyła ma mały bok") is True
+    assert is_palindrome("python") is False
+    assert is_palindrome("") is True
+    assert is_palindrome("A") is True
 
 
 def test_fibonacci():
@@ -60,10 +60,10 @@ def test_word_frequency():
 
 
 def test_is_prime():
-    assert is_prime(2) == True
-    assert is_prime(3) == True
-    assert is_prime(4) == False
-    assert is_prime(0) == False
-    assert is_prime(1) == False
-    assert is_prime(5) == True
-    assert is_prime(97) == True
+    assert is_prime(2) is True
+    assert is_prime(3) is True
+    assert is_prime(4) is False
+    assert is_prime(0) is False
+    assert is_prime(1) is False
+    assert is_prime(5) is True
+    assert is_prime(97) is True
