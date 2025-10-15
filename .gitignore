@@ -1,4 +1,9 @@
-.idea
+Dobre_Praktyki_Programowania/.idea
 .pytest_cache
 .venv
 __pycache__
+
+*.csv
+*.txt
+*.jpg
+*.png
