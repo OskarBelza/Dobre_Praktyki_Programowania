@@ -1,60 +1,49 @@
-import fastapi
-from fastapi.responses import Response
-import json
-from zadania.zadanie_15_10.utils import load_data
-from zadania.zadanie_15_10.models import Movie, Rating, Tag, Link
-from pathlib import Path
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from zadania.zadanie_15_10.database import get_db
+from zadania.zadanie_15_10.models import Movie, Link, Rating, Tag
+from zadania.zadanie_15_10.utils import list_all
 
-app = fastapi.FastAPI()
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "data"
-MOVIES_CSV = DATA_DIR / "movies.csv"
-RATINGS_CSV = DATA_DIR / "ratings.csv"
-TAGS_CSV = DATA_DIR / "tags.csv"
-LINKS_CSV = DATA_DIR / "links.csv"
+app = FastAPI(title="Movies API")
 
 
 @app.get("/")
-def read_root():
+def root():
     return {"Hello": "World"}
 
 
 @app.get("/movies")
-def get_movies():
-    movies = load_data(MOVIES_CSV, Movie)
-    payload = [m.__dict__ for m in movies]
-    return Response(
-        content=json.dumps(payload, indent=2, ensure_ascii=False),
-        media_type="application/json",
+def get_movies(db: Session = Depends(get_db)):
+    return list_all(
+        db,
+        columns=(Movie.id, Movie.title, Movie.genres),
+        order_by=Movie.id,
     )
 
 
 @app.get("/links")
-def get_links():
-    links = load_data(LINKS_CSV, Link)
-    payload = [l.__dict__ for l in links]
-    return Response(
-        content=json.dumps(payload, indent=2, ensure_ascii=False),
-        media_type="application/json",
+def get_links(db: Session = Depends(get_db)):
+    return list_all(
+        db,
+        columns=(Link.movieId, Link.imdbId, Link.tmdbId),
+        order_by=Link.movieId,
     )
 
 
 @app.get("/ratings")
-def get_ratings():
-    ratings = load_data(RATINGS_CSV, Rating)
-    payload = [r.__dict__ for r in ratings]
-    return Response(
-        content=json.dumps(payload, indent=2, ensure_ascii=False),
-        media_type="application/json",
+def get_ratings(db: Session = Depends(get_db)):
+    return list_all(
+        db,
+        columns=(Rating.userId, Rating.movieId, Rating.rating, Rating.timestamp),
+        order_by=Rating.movieId,
     )
 
 
 @app.get("/tags")
-def get_tags():
-    tags = load_data(TAGS_CSV, Tag)
-    payload = [t.__dict__ for t in tags]
-    return Response(
-        content=json.dumps(payload, indent=2, ensure_ascii=False),
-        media_type="application/json",
+def get_tags(db: Session = Depends(get_db)):
+    return list_all(
+        db,
+        columns=(Tag.userId, Tag.movieId, Tag.tag, Tag.timestamp),
+        order_by=Tag.movieId,
     )
