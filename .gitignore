@@ -7,3 +7,5 @@ __pycache__
 *.txt
 *.jpg
 *.png
+
+.env
