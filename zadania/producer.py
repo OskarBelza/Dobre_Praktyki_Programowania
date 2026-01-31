@@ -1,22 +1,30 @@
-import csv
-import uuid
-import os
+import sqlite3
 
-FILE_NAME = 'queue.csv'
+DB_NAME = 'tasks_queue.db'
 
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_name TEXT,
+            status TEXT DEFAULT 'pending'
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-def add_job(job_name):
-    file_exists = os.path.isfile(FILE_NAME)
-
-    with open(FILE_NAME, mode='a', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        if not file_exists:
-            writer.writerow(['id', 'task_name', 'status'])
-
-        job_id = str(uuid.uuid4())[:8]
-        writer.writerow([job_id, job_name, 'pending'])
-        print(f" Dodano zadanie: {job_name} (ID: {job_id})")
-
+def add_job(name):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO tasks (task_name, status) VALUES (?, ?)", (name, 'pending'))
+    conn.commit()
+    conn.close()
+    print(f" [+] Dodano zadanie: {name}")
 
 if __name__ == "__main__":
-    add_job("Rozmowa telefoniczna")
+    init_db()
+    # Pętla do wrzucenia 100 zadań na kolejkę
+    for i in range(1, 101):
+        add_job(f"Rozmowa nr {i}")

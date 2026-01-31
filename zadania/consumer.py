@@ -1,64 +1,47 @@
-import csv
+import sqlite3
 import time
-import os
 
-FILE_NAME = 'queue.csv'
-TEMP_FILE = 'queue_temp.csv'
+DB_NAME = 'tasks_queue.db'
 
 
-def process_jobs():
-    print(f"[*] Konsument uruchomiony. Czekam na zadania...")
+def consume():
+    print("[*] Consumer uruchomiony. Sprawdzanie zadań co 5s...")
 
     while True:
-        job_to_do = None
-        rows = []
+        conn = sqlite3.connect(DB_NAME)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-        if not os.path.exists(FILE_NAME):
-            time.sleep(5)
-            continue
+        # KROK 1: Spróbuj znaleźć i zarezerwować zadanie (atomic update)
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute("SELECT id, task_name FROM tasks WHERE status = 'pending' LIMIT 1")
+        row = cursor.fetchone()
 
-        # KROK 1: Odczyt i próba rezerwacji zadania
-        with open(FILE_NAME, mode='r', newline='', encoding='utf-8') as file:
-            reader = list(csv.reader(file))
-            if not reader: continue
+        if row:
+            task_id = row['id']
+            task_name = row['task_name']
 
-            headers = reader[0]
-            for row in reader[1:]:
-                if row[2] == 'pending' and job_to_do is None:
-                    row[2] = 'in_progress'
-                    job_to_do = row
-                rows.append(row)
+            cursor.execute("UPDATE tasks SET status = 'in_progress' WHERE id = ?", (task_id,))
+            conn.commit()
+            conn.close()
 
-        # KROK 2: Zapisanie zmian do pliku (rezerwacja)
-        if job_to_do:
-            with open(FILE_NAME, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                writer.writerow(headers)
-                writer.writerows(rows)
-
-            # KROK 3: Wykonanie pracy
-            print(f"[!] Pobrano zadanie {job_to_do[0]}: {job_to_do[1]}. Praca potrwa 30s...")
+            # KROK 2: Wykonanie pracy (30 sekund)
+            print(f"[!] Konsumuję zadanie ID {task_id}: {task_name}. Praca zajmie 30s...")
             time.sleep(30)
 
-            # KROK 4: Zmiana statusu na 'done'
-            final_rows = []
-            with open(FILE_NAME, mode='r', newline='', encoding='utf-8') as file:
-                reader = list(csv.reader(file))
-                headers = reader[0]
-                for row in reader[1:]:
-                    if row[0] == job_to_do[0]:
-                        row[2] = 'done'
-                    final_rows.append(row)
+            # KROK 3: Zmiana statusu na done
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE tasks SET status = 'done' WHERE id = ?", (task_id,))
+            conn.commit()
+            conn.close()
+            print(f"[V] Zadanie ID {task_id} zakończone.")
 
-            with open(FILE_NAME, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                writer.writerow(headers)
-                writer.writerows(final_rows)
-
-            print(f"[V] Zakończono zadanie {job_to_do[0]}.")
         else:
+            conn.rollback()
+            conn.close()
             time.sleep(5)
 
 
 if __name__ == "__main__":
-    process_jobs()
+    consume()
